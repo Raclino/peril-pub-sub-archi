@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -36,6 +38,18 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	fmt.Fprintln(w, "Connection to RabbitMQ was successful!")
 	fmt.Fprintln(w, "Press Ctrl+C to stop the server.")
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return fmt.Errorf("couldn't create RabbitMQ channel: %w", err)
+	}
+
+	err = pubsub.PublishJSON(channel, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
+		IsPaused: true,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't publish initial state: %w", err)
+	}
 
 	<-ctx.Done()
 
